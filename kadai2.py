@@ -128,7 +128,7 @@ def main():
         input_log(log_file_path,"Output File not found. Make File")
         with open(out_file_path, mode='w') as out_file:
             out_file.write('')
-        df.to_csv(out_file_path)
+        df.to_csv(out_file_path,encoding="utf_8-sig")
     finally:
         input_log(log_file_path,"finished.")
         driver.close()
