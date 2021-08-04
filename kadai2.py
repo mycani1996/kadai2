@@ -7,6 +7,9 @@ import time
 import pandas as pd
 import datetime
 
+# 定数を定義
+LOG_FILE_PATH = './log/log_{export_at}.log'
+
 # Chromeを起動する関数
 def set_driver(driver_path, headless_flg):
     if "chrome" in driver_path:
@@ -33,7 +36,7 @@ def set_driver(driver_path, headless_flg):
     else:
         return Firefox(executable_path=os.getcwd()  + "/" + driver_path,options=options)
 
-def input_log(name,log_str):
+def write_log(name,log_str):
     now_log = datetime.datetime.now()
     with open(name, mode='a+') as log_file:
         log_file.writelines(f"{str(now_log)}:{str(log_str)}\n")
@@ -78,7 +81,7 @@ def main():
 
     # Log用/output用のファイル名を用意
     now = datetime.datetime.now()
-    log_file_path = './log/log_'+now.strftime('%Y%m%d_%H%M%S') +'.log'
+    log_file_path = LOG_FILE_PATH.format(export_at=now.strftime('%Y%m%d_%H%M%S'))
     out_file_path = './data/out_'+now.strftime('%Y%m%d_%H%M%S') +'_'+search_keyword+'.csv'
 
     # 空のDataFrame作成
@@ -87,7 +90,7 @@ def main():
     i=0
 
     # ページ終了まで繰り返し取得(検索結果件数以下の間実施)
-    while content_num > i:
+    while 1:
         # 検索結果を全件取得
         content_list = driver.find_elements_by_class_name("cassetteRecruit__content")
         # print(len(content_list))
@@ -96,7 +99,7 @@ def main():
         for elem in content_list:
             i += 1
             # Logを残す
-            input_log(log_file_path,str(i)+"会社目")
+            write_log(log_file_path,str(i)+"会社目")
 
             # 会社名取得
             name = elem.find_element_by_class_name('cassetteRecruit__name')
@@ -115,22 +118,23 @@ def main():
         # 次のページへ
         next_page_elem = driver.find_elements_by_xpath("//*[@class='pager__item--active']/following-sibling::li[1]/a")
         if len(next_page_elem) == 0:
-            input_log(log_file_path,"最終ページ")
+            write_log(log_file_path,"最終ページ")
+            break
         else:
             driver.get(next_page_elem[0].get_attribute('href'))
-            input_log(log_file_path,"ページ遷移")
+            write_log(log_file_path,"ページ遷移")
             time.sleep(3)
 
     # csv形式で出力
     try:
         df.to_csv(out_file_path)
     except FileNotFoundError:
-        input_log(log_file_path,"Output File not found. Make File")
+        write_log(log_file_path,"Output File not found. Make File")
         with open(out_file_path, mode='w') as out_file:
             out_file.write('')
         df.to_csv(out_file_path,encoding="utf_8-sig")
     finally:
-        input_log(log_file_path,"finished.")
+        write_log(log_file_path,"finished.")
         driver.close()
 
 # 直接起動された場合はmain()を起動(モジュールとして呼び出された場合は起動しないようにするため)
